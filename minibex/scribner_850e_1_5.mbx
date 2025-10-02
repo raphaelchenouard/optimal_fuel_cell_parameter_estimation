@@ -1,0 +1,55 @@
+
+constants
+   	N=12;
+   	N_s=1;
+   	A=5;
+   	J_max=1.1;
+   	l=0.0183;
+   	T=353.15;
+   	P_H_2=1.5;
+   	P_O_2=1.5;
+    Vm_stack[N]=(0.76;0.75;0.72;0.7;0.65;0.63;0.57;0.5;0.45;0.38;0.27;0.19);
+
+   	Im_stack[N]=(0.35;0.6;0.95;1.25;1.5;1.6;2;2.5;3;3.5;4.25;4.75);
+
+   	E_Nernst = 1.229-0.85e-3*(T-298.15)+4.3085e-5*T*(ln(P_H_2)+0.5*ln(P_O_2)); //open circuit voltage or reversible voltage per cell in V
+   	C_O_2 = P_O_2*exp(498/T)/5.08e6; // concentration of O2 in mol/cm3
+
+variables
+   	ksi_1 in [-1.1997,-0.8532];
+   	ksi_2 in [1,5];
+   	ksi_3 in [3.6,9.8];
+   	ksi_4 in [-26,-9.54];
+   	R_C in [.1,.8]; // connections resistance in mohm
+   	lambda in [13,24];
+   	beta in [0.0136,0.5];
+
+   	r[N];
+
+function V_act(I,ksi_1,ksi_2,ksi_3,ksi_4)
+   	return -(ksi_1 + ksi_2*1e-3*T + ksi_3*1e-5*T*ln(C_O_2) + ksi_4*1e-5*T*ln(I))
+end
+
+function V_ohmic(I,R_C,lambda)
+   	return I*(R_C*1e-3 + (l*(181.6*(1+0.03*I/A+0.062*(T/303)^2*(I/A)^2.5))
+ 		 / ((lambda-0.634-3*I/A)*exp(4.18*(T-303)/T)))/A
+   	)
+end
+
+function V_con(I,beta)
+   	return -beta*ln(1-(I/A)/J_max)
+end
+
+function fV(I,R_C,ksi_1,ksi_2,ksi_3,ksi_4,lambda,beta)
+   	return N_s * (
+  		E_Nernst - V_act(I,ksi_1,ksi_2,ksi_3,ksi_4) - V_ohmic(I,R_C,lambda) - V_con(I,beta)
+   	)
+end
+
+Minimize sum(i=0:(N)-1,(r[i])^2)
+
+Constraints
+   	for i=0:N-1;
+  		r[i] = Vm_stack[i] - fV(Im_stack[i],R_C,ksi_1,ksi_2,ksi_3,ksi_4,lambda,beta);
+   	end;
+End

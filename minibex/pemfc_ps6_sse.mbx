@@ -1,0 +1,58 @@
+
+    constants
+    	N=29;
+	N_s=65;
+	A=240;
+	J_max=1.2;
+	l=0.0178;
+	T=343;
+	P_H_2=1;
+	P_O_2=1;
+	Vm_stack[N]=(61.64; 59.57; 58.94; 57.54; 56.8; 56.13; 55.23; 54.66; 53.61; 52.86; 51.91; 51.22; 49.66; 49; 48.15; 47.52; 47.1; 46.48; 45.66; 44.85; 44.24; 42.45; 41.66; 40.68; 40.09; 39.51; 38.73; 38.15; 37.38);
+	Im_stack[N]=(2.25; 6.75; 9; 15.75; 20.25; 24.75; 31.5; 36; 45; 51.75; 67.5; 72; 90; 99; 105.8; 110.3; 117; 126; 135; 141.8; 150.8; 162; 171; 182.3; 189; 195.8; 204.8; 211.5; 220.5);
+
+
+    	E_Nernst = 1.229-0.85e-3*(T-298.15)+4.3085e-5*T*(ln(P_H_2)+0.5*ln(P_O_2)); //open circuit voltage or reversible voltage per cell in V
+    	C_O_2 = P_O_2*exp(498/T)/5.08e6; // concentration of O2 in mol/cm3
+    	P_H_2_O = 10^(2.95e-2 * T - 9.18e-5 * T^2 + 1.44e-7 * T^3 - 2.18); // saturation pressure of water vapour
+
+    
+    variables
+    	ksi_1 in [-1.1997,-0.8532];
+    	ksi_2 in [1,5];
+    	ksi_3 in [3.6,9.8];
+    	ksi_4 in [-26,-9.54];
+    	R_C in [.1,.8]; // connections resistance in mohm
+    	lambda in [10,23];
+    	beta in [0.0136,0.5];
+
+    	V[N] in [0,oo];
+    
+    function V_act(I,ksi_1,ksi_2,ksi_3,ksi_4)
+    	return -(ksi_1 + ksi_2*1e-3*T + ksi_3*1e-5*T*ln(C_O_2) + ksi_4*1e-5*T*ln(I))
+    end
+
+    function V_ohmic(I,R_C,lambda)
+    	return I*(R_C*1e-3 + (l*(181.6*(1+0.03*I/A+0.062*(T/303)^2*(I/A)^2.5))
+    		 / ((lambda-0.634-3*I/A)*exp(4.18*(T-303)/T)))/A
+    	)
+    end
+
+    function V_con(I,beta)
+    	return -beta*ln(1-(I/A)/J_max)
+    end
+
+    function fV(I,R_C,ksi_1,ksi_2,ksi_3,ksi_4,lambda,beta)
+    	return N_s * (
+    		E_Nernst - V_act(I,ksi_1,ksi_2,ksi_3,ksi_4) - V_ohmic(I,R_C,lambda) - V_con(I,beta)
+    	)
+    end
+    
+    Minimize sum(i=0:N-1,(Vm_stack[i]-V[i])^2)
+
+    Constraints
+    	for i=0:N-1;
+    		V[i] = fV(Im_stack[i],R_C,ksi_1,ksi_2,ksi_3,ksi_4,lambda,beta);
+    	end;
+    End
+    
