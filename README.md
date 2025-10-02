@@ -11,7 +11,7 @@
 
 - Python >= 3.10:
   - numpy
-  - matplotlib
+  - niapy
   - plotly
 - IBEX C++ library >= 2.8.x: https://github.com/ibex-team/ibex-lib
 
@@ -25,6 +25,7 @@
   - `pemfc.py`: a class definition for PEM Fuel Cells that simulate I-V and PV curves.
   - `plot_conv.py`: a script to generate the convergence curves with varying precision from the results in the `ouputs` folder.
   - `plot_obj_evolution.py`: a script to generate the curves showing objective bounds evolution depending on time, from the results in the `ouputs` folder.
+  - `fc_niapy.py`: a script to runs metaheuristics from NiaPy library (e.g. GWO, PSO, MFO, BFO, FPO)
 
 ## Brief description of PEFMC modeling
 
